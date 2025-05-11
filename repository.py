@@ -25,14 +25,12 @@ class Repo:
         Girilen tarih + slot için önceki kaydı siler, yenisini ekler.
         """
         with DB() as db:
-            # (1) Aynı gün-slot varsa sil
             db.query("""DELETE FROM blood_sugar_measurements
                           WHERE patient_id=%s
                             AND DATE(measurement_time)=%s
                             AND time_slot=%s""",
                      (pid, date_obj, slot), fetch=False)
 
-            # (2) Yeni kayıt
             full_dt = datetime.datetime.combine(date_obj, time_obj)
             db.query("""INSERT INTO blood_sugar_measurements
                           (patient_id, measurement_time, sugar_level, time_slot)
@@ -102,11 +100,86 @@ class Repo:
     # ---------- insulin ----------
     @staticmethod
     def insulin_advice_on(pid, tarih: str):
-     return Repo._single("SELECT insulin_dozu FROM v_insulin_ozet "
-                    "WHERE patient_id=%s AND tarih=%s", pid, tarih)
+        return Repo._single("SELECT insulin_dozu FROM v_insulin_ozet "
+                            "WHERE patient_id=%s AND tarih=%s", pid, tarih)
+    @staticmethod
+    def slot_measurements_on(pid, date_obj: datetime.date):
+        return Repo._list("""
+            SELECT time_slot, sugar_level
+              FROM blood_sugar_measurements
+             WHERE patient_id=%s
+               AND DATE(measurement_time)=%s
+          ORDER BY FIELD(time_slot, 'Sabah', 'Öğle', 'İkindi', 'Akşam', 'Gece')
+        """, pid, date_obj)
 
 
-    
+    # ==============================================================
+    # 🆕 EKLENEN YÖNTEMLER (Doktor Paneli ihtiyaçları)
+    # ==============================================================
+
+    @staticmethod
+    def measurement_table(pid):
+        """
+        Hasta bazlı tüm kan şekeri ölçümlerini (tarih-saat-değer) döndürür.
+        """
+        return Repo._list(
+            """SELECT DATE(measurement_time)                        AS tarih,
+                      TIME_FORMAT(measurement_time,'%H:%i')         AS saat,
+                      sugar_level                                   AS deger
+                 FROM blood_sugar_measurements
+                WHERE patient_id=%s
+             ORDER BY measurement_time""",
+            pid
+        )
+
+    @staticmethod
+    def daily_graph_data(pid):
+        """
+        Günlük ortalama kan şekeri listesi (grafik için).
+        """
+        return Repo._list(
+            """SELECT tarih,
+                      ortalama_kan_sekeri AS ortalama
+                 FROM v_gunluk_kan_sekeri
+                WHERE patient_id=%s
+             ORDER BY tarih""",
+            pid
+        )
+
+    @staticmethod
+    def patient_archive(pid):
+        """
+        Ölçümler + egzersiz/diyet logları + uyarılar → tek arşiv listesi.
+        """
+        return Repo._list(
+            """
+            SELECT DATE(measurement_time) AS tarih,
+                   'Ölçüm'               AS veri_tipi,
+                   CONCAT(time_slot,' → ', sugar_level,' mg/dL') AS icerik
+              FROM blood_sugar_measurements
+             WHERE patient_id=%s
+            UNION ALL
+            SELECT exercise_date,
+                   'Egzersiz',
+                   CONCAT(exercise_type_id,' : ',status)
+              FROM exercise_logs
+             WHERE patient_id=%s
+            UNION ALL
+            SELECT diet_date,
+                   'Diyet',
+                   CONCAT(diet_type_id,' : ',status)
+              FROM diet_logs
+             WHERE patient_id=%s
+            UNION ALL
+            SELECT alert_date,
+                   'Uyarı',
+                   CONCAT(alert_type,' (',sugar_level,' mg/dL)')
+              FROM alerts
+             WHERE patient_id=%s
+            ORDER BY tarih
+            """,
+            pid, pid, pid, pid
+        )
 
     # ---------- yardımcı generic ----------
     @staticmethod
