@@ -1,12 +1,15 @@
+import hashlib
+import datetime
 from db import DB
-import hashlib, datetime
+
 
 def _hash(pw: str) -> str:
-    """Kullanıcı şifresi SHA-256 hash"""
+    """Kullanıcı şifresi SHA‑256 hash"""
     return hashlib.sha256(pw.encode()).hexdigest()
 
+
 class Repo:
-    # ---------- login ----------
+    # ---------- LOGIN -------------------------------------------------
     @staticmethod
     def get_user(tc, pw):
         tc = ''.join(filter(str.isdigit, tc))
@@ -16,6 +19,66 @@ class Repo:
                 (tc, _hash(pw))
             )
             return rows[0] if rows else None
+
+    # ---------- YENİ: HASTA OLUŞTURMA / PROFİL ------------------------
+    @staticmethod
+    def create_patient(tc_no: str, raw_pw: str, doctor_id: int,
+                       email: str, birth_date: datetime.date, gender: str,
+                       photo_bytes: bytes | None = None):
+        """Doktor yeni hasta oluşturur; users + patients iki adım."""
+        with DB() as db:
+            # 1. users kaydı
+            db.query(
+                """
+                INSERT INTO users
+                    (tc_kimlik_no, password_hash, email, birth_date,
+                     gender, photo_blob, role)
+                VALUES (%s,%s,%s,%s,%s,%s,'hasta')
+                """,
+                (tc_no, _hash(raw_pw), email, birth_date, gender, photo_bytes),
+                fetch=False
+            )
+            new_uid = db.cur.lastrowid
+            # 2. patients kaydı
+            db.query(
+                "INSERT INTO patients (id, doctor_id) VALUES (%s,%s)",
+                (new_uid, doctor_id), fetch=False
+            )
+            return new_uid
+
+    @staticmethod
+    def update_profile(uid: int, *, email=None, birth_date=None,
+                       gender=None, photo_bytes: bytes | None = None):
+        """Sadece verilen alanları günceller."""
+        parts, params = [], []
+        if email is not None:
+            parts.append("email=%s")
+            params.append(email)
+        if birth_date is not None:
+            parts.append("birth_date=%s")
+            params.append(birth_date)
+        if gender is not None:
+            parts.append("gender=%s")
+            params.append(gender)
+        if photo_bytes is not None:
+            parts.append("photo_blob=%s")
+            params.append(photo_bytes)
+        if not parts:
+            return  # değişiklik yok
+        params.append(uid)
+        q = f"UPDATE users SET {', '.join(parts)} WHERE id=%s"
+        Repo._exec(q, tuple(params))
+
+    @staticmethod
+    def get_profile(uid: int):
+        return Repo._single(
+            """
+            SELECT tc_kimlik_no, email, birth_date, gender, photo_blob
+              FROM users WHERE id=%s
+            """,
+            uid
+        )
+
 
     # ---------- ölçüm ----------
     @staticmethod
@@ -213,3 +276,4 @@ class Repo:
                         (patient_id, alert_date, alert_time, alert_type, sugar_level)
                       VALUES (%s, CURDATE(), CURTIME(), %s, %s)""",
                    (pid, alert_type, level))
+        

@@ -1,7 +1,7 @@
 # gui/app_windows.py
 import os, tkinter as tk
 from tkinter import messagebox
-from PIL import Image, ImageTk
+
 
 # panel sınıfları
 from gui.doktor import DoktorWin        # Doktor paneli
