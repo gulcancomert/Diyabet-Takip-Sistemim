@@ -51,8 +51,19 @@ class HastaWin(tk.Tk):
                 return slot
         return None
 
+    # 🔹 Boş ilk sütuna ⚠ değer yerleştirici
+    def _place_unknown(self, row_id, val):
+        for col in ("Sabah", "Öğle", "İkindi", "Akşam", "Gece"):
+            if self.tv.item(row_id, "values")[self.IDX[col]] == "":
+                self._cell_update(row_id, col, f"⚠ {val}")
+                return
+        # Hepsi doluysa en sola ekle
+        old = self.tv.item(row_id, "values")[self.IDX["Sabah"]]
+        self._cell_update(row_id, "Sabah", f"{old}, ⚠ {val}")
+
     # ---------- kurucu ----------
-    def __init__(self, user: dict | None = None):  # ← FIXED
+
+    def __init__(self, user: dict | None = None):
         super().__init__()
         self.user = user or {"id": 0, "tc_kimlik_no": "Demo"}
 
@@ -65,6 +76,7 @@ class HastaWin(tk.Tk):
 
         self._build_top_section()
         self._init_table()
+        self._populate_table()
 
     # ---------- ÜST KISIM + PROFİL ----------
     def _build_top_section(self):
@@ -109,8 +121,7 @@ class HastaWin(tk.Tk):
         self.e_val.grid(row=0, column=1, padx=4)
 
         tk.Label(frm, text="Tarih (GG.AA.YYYY):", bg=BG).grid(
-            row=0, column=2, padx=(12, 0)
-        )
+            row=0, column=2, padx=(12, 0))
         self.e_date = tk.Entry(frm, width=12, justify="center")
         self.e_date.grid(row=0, column=3)
 
@@ -122,23 +133,19 @@ class HastaWin(tk.Tk):
         tk.Button(top, text="Kaydet", command=self.kaydet,
                   width=10).pack(pady=(4, 2))
         tk.Button(top, text="Özet", command=self.ozet, width=10).pack(pady=2)
-        tk.Button(top, text="İnsülin Önerisi", command=self.insulin, width=14).pack(
-            pady=2
-        )
+        tk.Button(top, text="İnsülin Önerisi",
+                  command=self.insulin, width=14).pack(pady=2)
         self.lbl_cnt = tk.Label(top, fg="blue", bg=BG)
         self.lbl_cnt.pack(pady=2)
 
-        tk.Button(top, text="Egz./Diyet Yüzdesi", command=self.egz_diyet, width=18).pack(
-            pady=2
-        )
+        tk.Button(top, text="Egz./Diyet Yüzdesi",
+                  command=self.egz_diyet, width=18).pack(pady=2)
         tk.Button(top, text="Şeker Grafiği",
                   command=self.grafik, width=18).pack(pady=2)
-        tk.Button(top, text="İnsülin Geçmişi", command=self.insulin_gecmis, width=18).pack(
-            pady=2
-        )
+        tk.Button(top, text="İnsülin Geçmişi",
+                  command=self.insulin_gecmis, width=18).pack(pady=2)
 
     # ---------- 🆕 PROFİL DÜZENLE ----------
-
     def _edit_profile(self):
         prof = Repo.get_profile(self.user["id"])
 
@@ -147,30 +154,26 @@ class HastaWin(tk.Tk):
         win.configure(bg=BG)
         win.resizable(False, False)
 
-        tk.Label(win, text="E-posta:", bg=BG).grid(
-            row=0, column=0, sticky="e", padx=6, pady=4
-        )
+        tk.Label(win, text="E-posta:", bg=BG).grid(row=0,
+                                                   column=0, sticky="e", padx=6, pady=4)
         e_mail = tk.Entry(win, width=30)
         e_mail.grid(row=0, column=1, pady=4)
         e_mail.insert(0, prof["email"] if prof else "")
 
-        tk.Label(win, text="Doğum (YYYY-MM-DD):", bg=BG).grid(
-            row=1, column=0, sticky="e", padx=6, pady=4
-        )
+        tk.Label(win, text="Doğum (YYYY-MM-DD):", bg=BG).grid(row=1,
+                                                              column=0, sticky="e", padx=6, pady=4)
         e_bd = tk.Entry(win, width=30)
         e_bd.grid(row=1, column=1, pady=4)
         e_bd.insert(0, (prof["birth_date"] or "") if prof else "")
 
-        tk.Label(win, text="Cinsiyet (E/K):", bg=BG).grid(
-            row=2, column=0, sticky="e", padx=6, pady=4
-        )
+        tk.Label(win, text="Cinsiyet (E/K):", bg=BG).grid(row=2,
+                                                          column=0, sticky="e", padx=6, pady=4)
         e_gn = tk.Entry(win, width=30)
         e_gn.grid(row=2, column=1, pady=4)
         e_gn.insert(0, prof["gender"] if prof else "")
 
         tk.Label(win, text="Yeni Fotoğraf:", bg=BG).grid(
-            row=3, column=0, sticky="e", padx=6, pady=4
-        )
+            row=3, column=0, sticky="e", padx=6, pady=4)
         lbl_file = tk.Label(win, text="(seçilmedi)", bg=BG)
         lbl_file.grid(row=3, column=1, sticky="w")
 
@@ -187,8 +190,7 @@ class HastaWin(tk.Tk):
                     photo_bytes["data"] = f.read()
 
         tk.Button(win, text="Seç", command=choose).grid(
-            row=3, column=1, sticky="e", padx=6
-        )
+            row=3, column=1, sticky="e", padx=6)
 
         def kaydet():
             mail = e_mail.get().strip()
@@ -259,12 +261,12 @@ class HastaWin(tk.Tk):
 
         header = {
             "Tarih": "Tarih",
-            "Sabah": "Sabah(07-08)",
-            "Öğle": "Öğle(12-13)",
-            "İkindi": "İkindi(15-16)",
-            "Akşam": "Akşam(18-19)",
-            "Gece": "Gece(22-23)",
-            "İnsülin": "İnsülin(ml)",
+            "Sabah": "Sabah (07-08)",
+            "Öğle": "Öğle (12-13)",
+            "İkindi": "İkindi (15-16)",
+            "Akşam": "Akşam (18-19)",
+            "Gece": "Gece (22-23)",
+            "İnsülin": "İnsülin (ml)",
         }
         for col in self.COLS:
             self.tv.heading(col, text=header[col])
@@ -287,7 +289,25 @@ class HastaWin(tk.Tk):
         vals = self.tv.item(row, "values")
         return [int(v) for v in vals[1:6] if str(v).isdigit()]
 
+    # ---------- TABLOYU DOLDUR ----------
+    def _populate_table(self):
+        rows = Repo.measurement_table(self.user["id"])
+        print("DEBUG ölçüm satırları:", rows)  # ← Bunu ekle
+        for row in rows:
+            tarih_str = row["tarih"].strftime("%d.%m.%Y")
+            saat = datetime.datetime.strptime(row["saat"], "%H:%M").time()
+            slot = self._slot_from_time(saat)
+
+            row_id = self._row_by_date(tarih_str)
+
+            # Slot belirlenemiyorsa ⚠ işareti ile göster
+            if not slot:
+                self._place_unknown(row_id, row["deger"])
+            else:
+                self._cell_update(row_id, slot, row["deger"])
+
     # ---------- KAYDET ----------
+
     def kaydet(self):
         try:
             val = int(self.e_val.get())
@@ -309,24 +329,41 @@ class HastaWin(tk.Tk):
             return
 
         slot = self._slot_from_time(tm)
+        print("🧪 SLOT:", slot)
+
+        # --- slot YOKSA: kaydet + tabloya ⚠ ekle + ortalamaya dahil etme ---
         if slot is None:
             messagebox.showwarning(
-                "Zaman Dilimi Yok", "Girilen saat bir zaman dilimine uymuyor!"
+                "Uyarı",
+                "Girilen saat belirtilen zaman dilimlerine uymuyor!\n"
+                "Bu ölçüm kaydedildi ancak ortalamaya dahil edilmeyecek.",
             )
+            print("💡 SLOT YOK — Bilinmeyen olarak kaydedilecek.")
+
+            Repo.add_measurement(self.user["id"], val, "Bilinmeyen", dt, tm)
+
+            tarih_str = dt.strftime("%d.%m.%Y")
+            row_id = self._row_by_date(tarih_str)
+            self._place_unknown(row_id, val)
             return
 
+        # --- slot VARSA: normal işlem ---
         Repo.add_measurement(self.user["id"], val, slot, dt, tm)
 
         row = self._row_by_date(self.e_date.get())
         self._cell_update(row, slot, val)
+
         self.lbl_cnt.config(
             text=f"{self.e_date.get()} için {len(self._valid_slot_values())} ölçüm var."
         )
 
+
         if val < 70 or val > 200:
-            Repo.add_alert(
-                self.user["id"], "Hipoglisemi" if val < 70 else "Hiperglisemi", val
-            )
+            kritik_tip = "Acil Uyarı"
+            mesaj = f"{val} mg/dL → {'Hipoglisemi' if val < 70 else 'Hiperglisemi'}"
+            Repo.add_alert_full(self.user["id"], kritik_tip, val, dt, tm, mesaj)
+
+
 
     # ---------- ÖZET ----------
     def ozet(self):
@@ -346,8 +383,7 @@ class HastaWin(tk.Tk):
             self._cell_update(row, "İnsülin", insulin_dose(avg))
 
         messagebox.showinfo(
-            "Ortalama", f"{self.e_date.get()} ortalama: {avg:.1f} mg/dL"
-        )
+            "Ortalama", f"{self.e_date.get()} ortalama: {avg:.1f} mg/dL")
 
     # ---------- İNSÜLİN ÖNERİSİ ----------
     def insulin(self):
@@ -444,7 +480,7 @@ class HastaWin(tk.Tk):
                 d_date = raw if not isinstance(
                     raw, datetime.datetime) else raw.date()
             else:
-                s = str(raw).split(" ")[0]  # 'YYYY-MM-DD'
+                s = str(raw).split(" ")[0]
                 try:
                     d_date = datetime.date.fromisoformat(s)
                 except ValueError:

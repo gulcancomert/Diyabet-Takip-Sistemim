@@ -18,7 +18,6 @@ BG = "#EAF2F8"
 
 class DoktorWin(tk.Tk):
 
-
     def __init__(self, user):
         super().__init__()
         self.user = user
@@ -35,14 +34,15 @@ class DoktorWin(tk.Tk):
             img = Image.open(io.BytesIO(
                 self._profile['photo_blob'])).resize((80, 80))
             self._photo_tk = ImageTk.PhotoImage(img)
-            tk.Label(self, image=self._photo_tk, bg=BG).place(relx=0.02, rely=0.01)
+            tk.Label(self, image=self._photo_tk, bg=BG).place(
+                relx=0.02, rely=0.01)
 
         # 🔽 Profil resmi olsun olmasın mutlaka oluşturulmalı!
         cont = tk.Frame(self, bg=BG)
         cont.place(relx=0.5, rely=0.05, anchor="n")
 
         tk.Label(cont, text="Hastalarınız", font=("Segoe UI", 20, "bold"), bg=BG
-                ).grid(row=0, column=0, padx=6, pady=4)
+                 ).grid(row=0, column=0, padx=6, pady=4)
 
         self.lst = tk.Listbox(cont, height=20, width=30)
         self.lst.grid(row=1, column=0, rowspan=8, padx=6, pady=4)
@@ -52,27 +52,33 @@ class DoktorWin(tk.Tk):
 
         # Butonlar
         tk.Button(cont, text="Uyarıları Göster", command=self.uyari,
-                width=25).grid(row=1, column=1, pady=4)
+                  width=25).grid(row=1, column=1, pady=4)
         tk.Button(cont, text="Günlük Ortalama", command=self.ort,
-                width=25).grid(row=2, column=1, pady=4)
+                  width=25).grid(row=2, column=1, pady=4)
         tk.Button(cont, text="Egzersiz/Diyet Geçmişi",
-                command=self.egz_diyet, width=25).grid(row=3, column=1, pady=4)
+                  command=self.egz_diyet, width=25).grid(row=3, column=1, pady=4)
         tk.Button(cont, text="Kan Şekeri Tablosu", command=self.tablo,
-                width=25).grid(row=4, column=1, pady=4)
+                  width=25).grid(row=4, column=1, pady=4)
         tk.Button(cont, text="Grafiksel Değişim", command=self.grafik,
-                width=25).grid(row=5, column=1, pady=4)
+                  width=25).grid(row=5, column=1, pady=4)
         tk.Button(cont, text="Arşiv Verileri", command=self.arsiv,
-                width=25).grid(row=6, column=1, pady=4)
+                  width=25).grid(row=6, column=1, pady=4)
         tk.Button(cont, text="Gün İçi Değişim", command=self.gun_ici,
-                width=25).grid(row=7, column=1, pady=4)
+                  width=25).grid(row=7, column=1, pady=4)
 
         # 🆕 Hasta ekleme butonu
         tk.Button(cont, text="Hasta Ekle", command=self._hasta_ekle, width=25,
                   bg="#28B463", fg="white").grid(row=8, column=1, pady=(12, 4))
 
+        # Checkbox örneği (uyari() fonksiyonuna yakın bir yere)
+        self.only_today = tk.BooleanVar()
+        tk.Checkbutton(self, text="Sadece bugünkü uyarılar",
+                       variable=self.only_today, bg=BG).place(relx=0.02, rely=0.25)
+
     # =====================
     # 🆕 HASTA EKLE PENCERESİ
     # =====================
+
     def _hasta_ekle(self):
         win = tk.Toplevel(self)
         win.title("Yeni Hasta Tanımla")
@@ -127,35 +133,34 @@ class DoktorWin(tk.Tk):
         tk.Button(frm_photo, text="Seç",
                   command=choose_file).pack(side="left", padx=6)
 
-        def kaydet():
-            tc, pw, mail = (e_tc.get().strip(),
-                            e_pw.get().strip(),
-                            e_mail.get().strip())
-            bd_str = e_bd.get().strip()
-            c = e_gn.get().strip().upper()
-            gn = "Erkek" if c == "E" else "Kadın" if c == "K" else None
+    def kaydet():
 
+        tc, pw, mail = (e_tc.get().strip(),
+                        e_pw.get().strip(),
+                        e_mail.get().strip())
+        bd_str = e_bd.get().strip()
+        c = e_gn.get().strip().upper()
+        gn = "Erkek" if c == "E" else "Kadın" if c == "K" else None
 
-            if not (tc and pw and mail):
-                messagebox.showerror("Hata", "TC, şifre ve e-posta zorunlu.")
-                return
+        if not (tc and pw and mail):
+            messagebox.showerror("Hata", "TC, şifre ve e-posta zorunlu.")
+            return
 
-            try:
-                bd = datetime.date.fromisoformat(bd_str) if bd_str else None
-            except ValueError:
-                messagebox.showerror("Hata", "Doğum tarihi YYYY-MM-DD olmalı")
-                return
+        try:
+            bd = datetime.date.fromisoformat(bd_str) if bd_str else None
+        except ValueError:
+            messagebox.showerror("Hata", "Doğum tarihi YYYY-MM-DD olmalı")
+            return
 
-            try:
-                Repo.create_patient(
-                    tc, pw, self.user['id'], mail, bd, gn, photo_bytes["data"]
-                )
-                
+        try:
+            Repo.create_patient(
+                tc, pw, self.user['id'], mail, bd, gn, photo_bytes["data"]
+            )
 
-                send_email(
-                    mail,
-                    subject="Diyabet Takip Giriş Bilgileri",
-                    content=f"""
+            send_email(
+                mail,
+                subject="Diyabet Takip Giriş Bilgileri",
+                content=f"""
                 Merhaba,
 
                 Diyabet Takip Sistemine giriş bilgileriniz aşağıdadır:
@@ -165,44 +170,63 @@ class DoktorWin(tk.Tk):
 
                 Sağlıklı günler dileriz.
                 """
-                )
+            )
 
-                
+        except Exception as ex:
+            messagebox.showerror("Hata", str(ex))
+            return
 
-            except Exception as ex:
-                messagebox.showerror("Hata", str(ex))
-                return
+        messagebox.showinfo("Başarılı", "Hasta eklendi!")
+        win.destroy()
 
-            messagebox.showinfo("Başarılı", "Hasta eklendi!")
-            win.destroy()
-
-
-
-            # listeyi yenile
-            self.lst.delete(0, tk.END)
-            for p in Repo.list_patients(self.user['id']):
-                self.lst.insert(tk.END, f"{p['id']} - {p['tc_kimlik_no']}")
+        # listeyi yenile
+        self.lst.delete(0, tk.END)
+        for p in Repo.list_patients(self.user['id']):
+            self.lst.insert(tk.END, f"{p['id']} - {p['tc_kimlik_no']}")
 
         tk.Button(win, text="Kaydet", command=kaydet, width=18,
                   bg="#2980B9", fg="white").grid(row=6, column=0,
-                   columnspan=2, pady=12)
-                  
+                                                 columnspan=2, pady=12)
 
     # ---------- Yardımcı ----------
+
     def _selected_pid(self):
         sel = self.lst.curselection()
         return int(self.lst.get(sel[0]).split()[0]) if sel else None
 
     # ---------- Panel Fonksiyonları ----------
+
     def uyari(self):
         pid = self._selected_pid()
         if pid is None:
             return
+
+        # Eğer checkbox işaretliyse → kullanıcıdan tarih al
+        if hasattr(self, "only_today") and self.only_today.get():
+            tarih_str = simpledialog.askstring(
+                "Tarih", "GG.AA.YYYY biçiminde tarihi girin:")
+            if not tarih_str:
+                return
+            try:
+                tarih_obj = datetime.datetime.strptime(
+                    tarih_str, "%d.%m.%Y").date()
+            except ValueError:
+                messagebox.showerror(
+                    "Hata", "Tarih GG.AA.YYYY biçiminde olmalı")
+                return
+        else:
+            tarih_obj = None
+
         alerts = Repo.alerts_of_patient(pid)
+
+        # Tarih filtresi uygula (varsa)
+        if tarih_obj:
+            alerts = [a for a in alerts if a['tarih'] == tarih_obj]
+
         win = tk.Toplevel(self)
         win.title("Uyarılar")
         if not alerts:
-            tk.Label(win, text="Güncel uyarı yok").pack(padx=20, pady=10)
+            tk.Label(win, text="Uyarı bulunamadı").pack(padx=20, pady=10)
             return
         for a in alerts:
             tk.Label(
@@ -347,3 +371,27 @@ class DoktorWin(tk.Tk):
         ax.grid(True)
         FigureCanvasTkAgg(fig, master=win).get_tk_widget().pack(
             fill="both", expand=True)
+
+
+    def uyari(self):
+        pid = self._selected_pid()
+        if pid is None:
+            return
+
+        # ✔️ Doğru filtre parametresi gönderiliyor
+        alerts = Repo.alerts_of_patient(pid, only_today=self.only_today.get())
+
+        win = tk.Toplevel(self)
+        win.title("Uyarılar")
+
+        if not alerts:
+            tk.Label(win, text="Uyarı bulunamadı").pack(padx=20, pady=10)
+            return
+
+        for a in alerts:
+            tarih = a["tarih"] if isinstance(
+                a["tarih"], str) else a["tarih"].strftime("%d.%m.%Y")
+            tk.Label(
+                win,
+                text=f"{tarih} {a['saat']} → {a['alert_type']} ({a['sugar_level']} mg/dL)"
+            ).pack(anchor="w")

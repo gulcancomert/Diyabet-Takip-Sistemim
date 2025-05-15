@@ -79,28 +79,50 @@ class Repo:
             uid
         )
 
-
     # ---------- ölçüm ----------
-    @staticmethod
-    def add_measurement(pid, value, slot,
-                        date_obj: datetime.date, time_obj: datetime.time):
-        """
-        Girilen tarih + slot için önceki kaydı siler, yenisini ekler.
-        """
-        with DB() as db:
-            db.query("""DELETE FROM blood_sugar_measurements
-                          WHERE patient_id=%s
-                            AND DATE(measurement_time)=%s
-                            AND time_slot=%s""",
-                     (pid, date_obj, slot), fetch=False)
 
-            full_dt = datetime.datetime.combine(date_obj, time_obj)
-            db.query("""INSERT INTO blood_sugar_measurements
-                          (patient_id, measurement_time, sugar_level, time_slot)
-                        VALUES (%s, %s, %s, %s)""",
-                     (pid, full_dt, value, slot), fetch=False)
+
+    @staticmethod
+    def add_measurement(user_id, val, slot, date, time):
+        import mysql.connector
+        conn = None
+        cursor = None
+        try:
+            conn = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="gulsuf201",  # ← Şifren buysa bu şekilde bırak. Varsa gir.
+                database="diyabet_takip"
+            )
+            cursor = conn.cursor()
+
+            query = """
+                INSERT INTO blood_sugar_measurements (user_id, deger, zaman_dilimi, tarih, saat)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (user_id, val, slot, date, time))
+            conn.commit()
+
+            print("✅ SQL'e başarıyla kaydedildi:", val, slot, date, time)
+
+        except Exception as e:
+            print("❌ SQL HATASI:", e)
+
+        finally:
+            try:
+                if cursor:
+                    cursor.close()
+            except:
+                pass
+            try:
+                if conn:
+                    conn.close()
+            except:
+                pass
+
 
     # ---------- özet ----------
+
     @staticmethod
     def daily_summary(pid):
         return Repo._single("""SELECT ortalama_kan_sekeri
@@ -155,16 +177,28 @@ class Repo:
                               WHERE p.doctor_id=%s""", doc_id)
 
     @staticmethod
-    def alerts_of_patient(pid):
-        return Repo._list("""SELECT tarih, saat, alert_type, sugar_level
-                               FROM v_uyari_listesi
-                              WHERE patient_id=%s""", pid)
+    def alerts_of_patient(pid, *, only_today=False):
+        if only_today:
+            return Repo._list("""
+                SELECT tarih, saat, alert_type, sugar_level
+                FROM v_uyari_listesi
+                WHERE patient_id=%s
+                AND DATE(tarih) = CURDATE()
+            """, pid)
+        else:
+            return Repo._list("""
+                SELECT tarih, saat, alert_type, sugar_level
+                FROM v_uyari_listesi
+                WHERE patient_id=%s
+            """, pid)
 
     # ---------- insulin ----------
+
     @staticmethod
     def insulin_advice_on(pid, tarih: str):
         return Repo._single("SELECT insulin_dozu FROM v_insulin_ozet "
                             "WHERE patient_id=%s AND tarih=%s", pid, tarih)
+
     @staticmethod
     def slot_measurements_on(pid, date_obj: datetime.date):
         return Repo._list("""
@@ -174,7 +208,6 @@ class Repo:
                AND DATE(measurement_time)=%s
           ORDER BY FIELD(time_slot, 'Sabah', 'Öğle', 'İkindi', 'Akşam', 'Gece')
         """, pid, date_obj)
-
 
     # ==============================================================
     # 🆕 EKLENEN YÖNTEMLER (Doktor Paneli ihtiyaçları)
@@ -271,9 +304,10 @@ class Repo:
                                 AND sugar_level IS NOT NULL""", pid)
 
     @staticmethod
-    def add_alert(pid, alert_type, level):
-        Repo._exec("""INSERT INTO alerts
-                        (patient_id, alert_date, alert_time, alert_type, sugar_level)
-                      VALUES (%s, CURDATE(), CURTIME(), %s, %s)""",
-                   (pid, alert_type, level))
-        
+    def add_alert_full(pid, alert_type, level, date_obj, time_obj, message):
+        with DB() as db:
+            db.query("""
+                INSERT INTO alerts
+                    (patient_id, alert_type, sugar_level, alert_date, alert_time, alert_message)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (pid, alert_type, level, date_obj, time_obj, message), fetch=False)
