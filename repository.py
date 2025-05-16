@@ -81,7 +81,6 @@ class Repo:
 
     # ---------- ölçüm ----------
 
-
     @staticmethod
     def add_measurement(user_id, val, slot, date, time):
         import mysql.connector
@@ -91,17 +90,12 @@ class Repo:
             conn = mysql.connector.connect(
                 host="localhost",
                 user="root",
-<<<<<<< HEAD
                 password="gulsuf201",  # ← Şifren buysa bu şekilde bırak
-=======
-                password="gulsuf201",  # ← Şifren buysa bu şekilde bırak. Varsa gir.
->>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
                 database="diyabet_takip"
             )
             cursor = conn.cursor()
 
             query = """
-<<<<<<< HEAD
                 INSERT INTO blood_sugar_measurements
                     (patient_id, sugar_level, time_slot, measurement_time, zaman_dilimi)
                 VALUES (%s, %s, %s, %s, %s)
@@ -112,14 +106,7 @@ class Repo:
             ts_val = slot if slot in enum_values else None
             zd_val = slot if slot else "Bilinmeyen"
 
- 
             cursor.execute(query, (user_id, val, slot, full_dt, slot))
-=======
-                INSERT INTO blood_sugar_measurements (user_id, deger, zaman_dilimi, tarih, saat)
-                VALUES (%s, %s, %s, %s, %s)
-            """
-            cursor.execute(query, (user_id, val, slot, date, time))
->>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
             conn.commit()
 
             print("✅ SQL'e başarıyla kaydedildi:", val, slot, date, time)
@@ -139,11 +126,6 @@ class Repo:
             except:
                 pass
 
-
-<<<<<<< HEAD
-
-=======
->>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
     # ---------- özet ----------
 
     @staticmethod
@@ -334,27 +316,22 @@ class Repo:
                     (patient_id, alert_type, sugar_level, alert_date, alert_time, alert_message)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (pid, alert_type, level, date_obj, time_obj, message), fetch=False)
-<<<<<<< HEAD
-
-
-    @staticmethod
-    def assign_plan(pid, diet, exercise):
-        """Doktorun hastaya atadığı güncel planı kaydeder (üzerine yazar)."""
-        Repo._exec("""
-            INSERT INTO patient_plan (patient_id, diet_plan, exercise_plan, assigned_date)
-            VALUES (%s,%s,%s,CURDATE())
-            ON DUPLICATE KEY UPDATE
-                diet_plan=VALUES(diet_plan),
-                exercise_plan=VALUES(exercise_plan),
-                assigned_date=VALUES(assigned_date)
-        """, (pid, diet, exercise))
-
 
     @staticmethod
     def get_assigned_plan(pid: int):
         return Repo._single(
             "SELECT diet_plan, exercise_plan FROM assigned_plans WHERE patient_id=%s",
-            pid
+            pid,
         )
-=======
->>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
+
+    @staticmethod
+    def assign_plan(pid: int, diet: str, ex: str):
+        """Hastaya egzersiz ve diyet planı atar (ekle veya güncelle)."""
+        with DB() as db:
+            db.query("""
+                INSERT INTO assigned_plans (patient_id, diet_plan, exercise_plan)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    diet_plan = VALUES(diet_plan),
+                    exercise_plan = VALUES(exercise_plan)
+            """, (pid, diet, ex), fetch=False)

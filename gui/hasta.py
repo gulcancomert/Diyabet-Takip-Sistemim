@@ -405,6 +405,16 @@ class HastaWin(tk.Tk):
         win.title("Egzersiz / Diyet Yüzdeleri")
         txt = tk.Text(win, width=50, height=15)
         txt.pack(padx=10, pady=8)
+        
+        # --- PLAN BAŞLIĞI ------------------------------------------------
+        plan = Repo.get_assigned_plan(self.user["id"])
+        if plan:
+            txt.insert("end",
+                f"Diyet Planı   : {plan.get('diet_plan', '-')}\n"
+                f"Egzersiz Planı: {plan.get('exercise_plan', '-')}\n\n"
+            )
+        # -----------------------------------------------------------------
+            
 
         txt.insert("end", "Tarih      Egzersiz %   Diyet %\n")
         txt.insert("end", "--------------------------------\n")
