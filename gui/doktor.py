@@ -70,10 +70,13 @@ class DoktorWin(tk.Tk):
         tk.Button(cont, text="Hasta Ekle", command=self._hasta_ekle, width=25,
                   bg="#28B463", fg="white").grid(row=8, column=1, pady=(12, 4))
 
+<<<<<<< HEAD
 # --- Belirti / Öneri butonu  ---------------------------
         tk.Button(cont, text="Belirti - Öneri", command=self._open_symptom_form,
                   width=25, bg="#F39C12", fg="white").grid(row=9, column=1, pady=(4, 12))
 
+=======
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
         # Checkbox örneği (uyari() fonksiyonuna yakın bir yere)
         self.only_today = tk.BooleanVar()
         tk.Checkbutton(self, text="Sadece bugünkü uyarılar",
@@ -333,6 +336,7 @@ class DoktorWin(tk.Tk):
                 "end", f"{row['tarih']} {row['veri_tipi']}: {row['icerik']}\n")
         txt.config(state="disabled")
 
+<<<<<<< HEAD
         # =======================================================
     #  🆕  Doktorun belirtileri girip “Öneri Oluştur”duğu form
     # =======================================================
@@ -415,6 +419,8 @@ class DoktorWin(tk.Tk):
                 bg="#27AE60", fg="white", width=18).grid(
                     row=7, column=1, pady=(12, 4))
 
+=======
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
     def gun_ici(self):
         pid = self._selected_pid()
         if pid is None:
@@ -458,6 +464,10 @@ class DoktorWin(tk.Tk):
         FigureCanvasTkAgg(fig, master=win).get_tk_widget().pack(
             fill="both", expand=True)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
     def uyari(self):
         pid = self._selected_pid()
         if pid is None:
@@ -480,6 +490,7 @@ class DoktorWin(tk.Tk):
                 win,
                 text=f"{tarih} {a['saat']} → {a['alert_type']} ({a['sugar_level']} mg/dL)"
             ).pack(anchor="w")
+<<<<<<< HEAD
 
     def _calc_reco(self, sugar: float, sy_list: list[str]) -> tuple[str, str]:
         """PDF’teki kural tablosuna %100 uyumlu öneri döner."""
@@ -514,3 +525,5 @@ class DoktorWin(tk.Tk):
 
         # eşleşme yoksa
         return "", ""
+=======
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272

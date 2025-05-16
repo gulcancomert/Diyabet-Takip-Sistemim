@@ -91,12 +91,17 @@ class Repo:
             conn = mysql.connector.connect(
                 host="localhost",
                 user="root",
+<<<<<<< HEAD
                 password="gulsuf201",  # ← Şifren buysa bu şekilde bırak
+=======
+                password="gulsuf201",  # ← Şifren buysa bu şekilde bırak. Varsa gir.
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
                 database="diyabet_takip"
             )
             cursor = conn.cursor()
 
             query = """
+<<<<<<< HEAD
                 INSERT INTO blood_sugar_measurements
                     (patient_id, sugar_level, time_slot, measurement_time, zaman_dilimi)
                 VALUES (%s, %s, %s, %s, %s)
@@ -109,6 +114,12 @@ class Repo:
 
  
             cursor.execute(query, (user_id, val, slot, full_dt, slot))
+=======
+                INSERT INTO blood_sugar_measurements (user_id, deger, zaman_dilimi, tarih, saat)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (user_id, val, slot, date, time))
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
             conn.commit()
 
             print("✅ SQL'e başarıyla kaydedildi:", val, slot, date, time)
@@ -129,7 +140,10 @@ class Repo:
                 pass
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
     # ---------- özet ----------
 
     @staticmethod
@@ -320,6 +334,7 @@ class Repo:
                     (patient_id, alert_type, sugar_level, alert_date, alert_time, alert_message)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (pid, alert_type, level, date_obj, time_obj, message), fetch=False)
+<<<<<<< HEAD
 
 
     @staticmethod
@@ -341,3 +356,5 @@ class Repo:
             "SELECT diet_plan, exercise_plan FROM assigned_plans WHERE patient_id=%s",
             pid
         )
+=======
+>>>>>>> ff5ba3752ee48505231700abff9bf0d5334e1272
