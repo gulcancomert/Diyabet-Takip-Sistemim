@@ -205,39 +205,49 @@ class DoktorWin(tk.Tk):
         if pid is None:
             return
 
-        # Eğer checkbox işaretliyse → kullanıcıdan tarih al
-        if hasattr(self, "only_today") and self.only_today.get():
-            tarih_str = simpledialog.askstring(
-                "Tarih", "GG.AA.YYYY biçiminde tarihi girin:")
-            if not tarih_str:
+        # — 1) Tarih filtresi hazırlanıyor ------------------------
+        tarih_obj = None
+        if self.only_today.get():                # checkbox ✔
+            t = simpledialog.askstring(
+                "Tarih",
+                "GG.AA.YYYY biçiminde tarihi girin\n"
+                "(boş bırak → sadece BUGÜN):"
+            )
+            if t is None:          # İptal’e basıldı
                 return
-            try:
-                tarih_obj = datetime.datetime.strptime(
-                    tarih_str, "%d.%m.%Y").date()
-            except ValueError:
-                messagebox.showerror(
-                    "Hata", "Tarih GG.AA.YYYY biçiminde olmalı")
-                return
-        else:
-            tarih_obj = None
-
-        alerts = Repo.alerts_of_patient(pid)
-
-        # Tarih filtresi uygula (varsa)
-        if tarih_obj:
+            if t.strip() == "":    # boş ise bugün
+                tarih_obj = datetime.date.today()
+            else:
+                try:
+                    tarih_obj = datetime.datetime.strptime(
+                        t.strip(), "%d.%m.%Y").date()
+                except ValueError:
+                    messagebox.showerror(
+                        "Hata", "Tarih GG.AA.YYYY biçiminde olmalı")
+                    return
+        # — 2) Veritabanından veriler ----------------------------
+        alerts = Repo.alerts_of_patient(pid)     # hepsini çek
+        if tarih_obj:                            # filtre uygula
             alerts = [a for a in alerts if a['tarih'] == tarih_obj]
 
+        # — 3) Pencereyi göster ----------------------------------
         win = tk.Toplevel(self)
         win.title("Uyarılar")
+
         if not alerts:
             tk.Label(win, text="Uyarı bulunamadı").pack(padx=20, pady=10)
             return
+
         for a in alerts:
+            tarih_txt = (a['tarih'].strftime("%d.%m.%Y")
+                         if isinstance(a['tarih'], datetime.date)
+                         else str(a['tarih']))
             tk.Label(
                 win,
-                text=f"{a['tarih']} {a['saat']} → {a['alert_type']} "
-                f"({a['sugar_level']} mg/dL)"
-            ).pack(anchor="w")
+                text=f"{tarih_txt} {a['saat']}  →  {a['alert_type']} "
+                     f"({a['sugar_level']} mg/dL)"
+            ).pack(anchor="w", padx=8)
+
 
     def ort(self):
         pid = self._selected_pid()
