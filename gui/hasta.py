@@ -40,7 +40,7 @@ class HastaWin(tk.Tk):
         "Akşam":  (datetime.time(18, 0), datetime.time(19, 0)),
         "Gece":   (datetime.time(22, 0), datetime.time(23, 59)),
     }
-    COLS = ["Tarih", "Sabah", "Öğle", "İkindi", "Akşam", "Gece", "İnsülin"]
+    COLS = ["Tarih", "Sabah", "Öğle", "İkindi", "Akşam", "Gece"]
     IDX = {c: i for i, c in enumerate(COLS)}
 
     # ---------- yardımcı ----------
@@ -82,18 +82,20 @@ class HastaWin(tk.Tk):
     def _build_top_section(self):
         top = tk.Frame(self, bg=BG)
         top.place(relx=0.5, rely=0.05, anchor="n")
+        self.lbl_cnt = tk.Label(self, text="", bg=BG)
+        self.lbl_cnt.place(relx=0.5, rely=0.62, anchor="center")
 
         # 🖼️ Fotoğraf (varsa)
         self._photo_tk = None
-        if self._profile and self._profile["photo_blob"]:
+        if self._profile and self._profile["profile_image"]:
             img = Image.open(io.BytesIO(
-                self._profile["photo_blob"])).resize((80, 80))
+                self._profile["profile_image"])).resize((80, 80))
             self._photo_tk = ImageTk.PhotoImage(img)
             tk.Label(top, image=self._photo_tk, bg=BG).pack()
 
         tk.Label(
             top,
-            text=f"Hoş geldiniz, {self.user['tc_kimlik_no']}",
+            text=f"Hoş geldiniz, {self.user['first_name']} {self.user['last_name']}",
             font=("Segoe UI", 20, "bold"),
             bg=BG,
         ).pack(pady=4)
@@ -125,21 +127,19 @@ class HastaWin(tk.Tk):
         self.e_date = tk.Entry(frm, width=12, justify="center")
         self.e_date.grid(row=0, column=3)
 
-        tk.Label(frm, text="Saat (HH:MM):", bg=BG).grid(
+        tk.Label(frm, text="Saat (HH:MM:SS):", bg=BG).grid(
             row=0, column=4, padx=(12, 0))
         self.e_time = tk.Entry(frm, width=8, justify="center")
         self.e_time.grid(row=0, column=5)
 
         tk.Button(top, text="Kaydet", command=self.kaydet,
                   width=10).pack(pady=(4, 2))
-        tk.Button(top, text="Özet", command=self.ozet, width=10).pack(pady=2)
-        tk.Button(top, text="İnsülin Önerisi",
-                  command=self.insulin, width=14).pack(pady=2)
-        self.lbl_cnt = tk.Label(top, fg="blue", bg=BG)
-        self.lbl_cnt.pack(pady=2)
-
+        tk.Button(top, text="İnsulin Önerisi",
+                  command=self.slot_bazli_insulin, width=18).pack(pady=2)
         tk.Button(top, text="Egz./Diyet Yüzdesi",
                   command=self.egz_diyet, width=18).pack(pady=2)
+        tk.Button(top, text="Önerilen Plan",
+                  command=self._gunluk_bildir, width=18).pack(pady=2)
         tk.Button(top, text="Şeker Grafiği",
                   command=self.grafik, width=18).pack(pady=2)
         tk.Button(top, text="İnsülin Geçmişi",
@@ -160,7 +160,7 @@ class HastaWin(tk.Tk):
         e_mail.grid(row=0, column=1, pady=4)
         e_mail.insert(0, prof["email"] if prof else "")
 
-        tk.Label(win, text="Doğum (YYYY-MM-DD):", bg=BG).grid(row=1,
+        tk.Label(win, text="Doğum (DD-MM-YYYY):", bg=BG).grid(row=1,
                                                               column=0, sticky="e", padx=6, pady=4)
         e_bd = tk.Entry(win, width=30)
         e_bd.grid(row=1, column=1, pady=4)
@@ -203,7 +203,7 @@ class HastaWin(tk.Tk):
                     bd = datetime.date.fromisoformat(bd_str)
                 except ValueError:
                     messagebox.showerror(
-                        "Hata", "Doğum tarihi YYYY-MM-DD olmalı")
+                        "Hata", "Doğum tarihi DD-MM-YYYY olmalı")
                     return
 
             try:
@@ -223,6 +223,11 @@ class HastaWin(tk.Tk):
             # pencereyi tazele
             self.destroy()
             HastaWin(self.user).mainloop()
+
+           # if not self.e_time.get().strip():
+              #  messagebox.showerror(
+               #     "Hata", "Lütfen saat bilgisini giriniz (HH:MM)")
+                #return
 
         tk.Button(
             win, text="Kaydet", command=kaydet, bg="#2980B9", fg="white", width=20
@@ -266,7 +271,6 @@ class HastaWin(tk.Tk):
             "İkindi": "İkindi (15-16)",
             "Akşam": "Akşam (18-19)",
             "Gece": "Gece (22-23)",
-            "İnsülin": "İnsülin (ml)",
         }
         for col in self.COLS:
             self.tv.heading(col, text=header[col])
@@ -295,7 +299,16 @@ class HastaWin(tk.Tk):
         print("DEBUG ölçüm satırları:", rows)  # ← Bunu ekle
         for row in rows:
             tarih_str = row["tarih"].strftime("%d.%m.%Y")
-            saat = datetime.datetime.strptime(row["saat"], "%H:%M").time()
+            saat_str = row["saat"]
+            try:
+                # HH:MM formatı mı?
+                if len(saat_str) == 5:
+                    saat = datetime.datetime.strptime(saat_str, "%H:%M").time()
+                else:
+                    saat = datetime.datetime.strptime(saat_str, "%H:%M:%S").time()
+            except Exception as ex:
+                print("❌ Saat parse hatası:", saat_str, ex)
+                continue
             slot = self._slot_from_time(saat)
 
             row_id = self._row_by_date(tarih_str)
@@ -306,9 +319,17 @@ class HastaWin(tk.Tk):
             else:
                 self._cell_update(row_id, slot, row["deger"])
 
-    # ---------- KAYDET ----------
-
     def kaydet(self):
+        # --- TEMEL BOŞLUK / FORMAT KONTROLÜ ----------------------
+        if not self.e_val.get().strip() or not self.e_date.get().strip() or not self.e_time.get().strip():
+            messagebox.showwarning("Eksik Giriş", "Şeker, tarih ve saat alanları boş bırakılamaz.")
+            return
+
+        if not self.e_val.get().strip().isdigit():
+            messagebox.showerror("Hata", "Kan şekeri değeri sadece sayılardan oluşmalıdır.")
+            return
+        # ---------------------------------------------------------
+
         try:
             val = int(self.e_val.get())
         except ValueError:
@@ -316,14 +337,13 @@ class HastaWin(tk.Tk):
             return
 
         try:
-            dt = datetime.datetime.strptime(
-                self.e_date.get(), "%d.%m.%Y").date()
+            dt = datetime.datetime.strptime(self.e_date.get(), "%d.%m.%Y").date()
         except ValueError:
             messagebox.showerror("Hata", "Tarih GG.AA.YYYY biçiminde olmalı")
             return
 
         try:
-            tm = datetime.datetime.strptime(self.e_time.get(), "%H:%M").time()
+            tm = datetime.datetime.strptime(self.e_time.get(), "%H:%M:%S").time()
         except ValueError:
             messagebox.showerror("Hata", "Saat HH:MM biçiminde olmalı")
             return
@@ -331,70 +351,71 @@ class HastaWin(tk.Tk):
         slot = self._slot_from_time(tm)
         print("🧪 SLOT:", slot)
 
-        # --- slot YOKSA: kaydet + tabloya ⚠ ekle + ortalamaya dahil etme ---
-        if slot is None:
-            messagebox.showwarning(
-                "Uyarı",
-                "Girilen saat belirtilen zaman dilimlerine uymuyor!\n"
-                "Bu ölçüm kaydedildi ancak ortalamaya dahil edilmeyecek.",
-            )
-            print("💡 SLOT YOK — Bilinmeyen olarak kaydedilecek.")
+        tarih_str = dt.strftime("%d.%m.%Y")
+        row_id = self._row_by_date(tarih_str)
 
-            Repo.add_measurement(self.user["id"], val, "Bilinmeyen", dt, tm)
-
-            tarih_str = dt.strftime("%d.%m.%Y")
-            row_id = self._row_by_date(tarih_str)
-            self._place_unknown(row_id, val)
-            return
-
-        # --- slot VARSA: normal işlem ---
+        # Ölçüm kaydet (slot olsun olmasın)
+        slot_or_default = slot if slot is not None else "Bilinmeyen"
         Repo.add_measurement(self.user["id"], val, slot, dt, tm)
 
-        row = self._row_by_date(self.e_date.get())
-        self._cell_update(row, slot, val)
+        # KAYDET fonksiyonunda Repo.add_measurement(...) satırından hemen SONRA
+        alert_t, msg = Repo._build_level_alert(val)
+        if alert_t:
+            Repo.add_alert_full(self.user["id"], alert_t, val, dt, tm, msg)
+
+        # ✅ SADECE BURADA UYARI EKLENİR (çift kayıt olmaz)
+        if val < 70 or val > 200:
+            mesaj = f"Kan şekeri {val} mg/dL! Acil müdahale gerekebilir."
+            Repo.add_alert_full(
+                self.user["id"], "Acil Uyarı", val, dt, tm, mesaj)
+
+        # Tabloya ekleme/güncelleme
+        if not slot:
+            self._place_unknown(row_id, val)
+            messagebox.showwarning(
+                "Eksik Ölçüm",
+                "Ölçüm eksik! Ortalama alınırken bu ölçüm hesaba katılmadı."
+            )
+        else:
+            self._cell_update(row_id, slot, val)
 
         self.lbl_cnt.config(
             text=f"{self.e_date.get()} için {len(self._valid_slot_values())} ölçüm var."
         )
 
+        # 🔹 Eksik / Yetersiz ölçüm uyarısı kontrolü (isteğe bağlı tekrar açabilirsin)
+        # Repo.daily_completeness_alert(self.user["id"], dt)
 
-        if val < 70 or val > 200:
-            kritik_tip = "Acil Uyarı"
-            mesaj = f"{val} mg/dL → {'Hipoglisemi' if val < 70 else 'Hiperglisemi'}"
-            Repo.add_alert_full(self.user["id"], kritik_tip, val, dt, tm, mesaj)
+    # ### EKLE – Slot bazlı doz tablosu ----------------------------------
 
-
-
-    # ---------- ÖZET ----------
-    def ozet(self):
-        vals = self._valid_slot_values()
-        if not vals:
-            messagebox.showwarning("Veri Yok", "Bu tarihte geçerli ölçüm yok")
+    def slot_bazli_insulin(self):
+        """Her zaman dilimine kadar ortalamayı hesaplar ve doz önerir."""
+        # 1) giriş tarihi
+        try:
+            dt = datetime.datetime.strptime(
+                self.e_date.get(), "%d.%m.%Y").date()
+        except ValueError:
+            messagebox.showerror("Hata", "Tarih GG.AA.YYYY biçiminde olmalı.")
             return
 
-        avg = sum(vals) / len(vals)
+        slotlar = ["Sabah", "Öğle", "İkindi", "Akşam", "Gece"]
+        biriken = []
+        rapor = ""
 
-        if len(vals) < 3:
-            messagebox.showwarning(
-                "Yetersiz Veri", "3'ten az ölçüm var, ortalama güvenilir değil."
-            )
-        else:
-            row = self._row_by_date(self.e_date.get())
-            self._cell_update(row, "İnsülin", insulin_dose(avg))
+        for slot in slotlar:
+            v = Repo.get_measurement_value(self.user["id"], dt, slot)
+            if v is not None:
+                biriken.append(v)
+                ort = sum(biriken) / len(biriken)
+                doz = insulin_dose(ort) or "-"
+                rapor += f"{slot:<6} → {ort:>6.1f} mg/dL → {doz} insülin\n"
+            else:
+                rapor += f"{slot:<6} → (ölçüm yok)\n"
 
-        messagebox.showinfo(
-            "Ortalama", f"{self.e_date.get()} ortalama: {avg:.1f} mg/dL")
+        if len(biriken) < 3:
+            rapor += "\n⚠ Yetersiz veri! Ortalama güvenilir değildir."
 
-    # ---------- İNSÜLİN ÖNERİSİ ----------
-    def insulin(self):
-        vals = self._valid_slot_values()
-        if not vals:
-            messagebox.showerror("Veri Yok", "Bu tarihte geçerli ölçüm yok")
-            return
-        avg = sum(vals) / len(vals)
-        doz = insulin_dose(avg) or "İnsülin gerekmiyor"
-        messagebox.showinfo(
-            "İnsülin", f"{self.e_date.get()} doz önerisi: {doz}")
+        messagebox.showinfo("Slot Bazlı İnsülin Önerisi", rapor)
 
     # ---------- Egzersiz & Diyet ----------
     def egz_diyet(self):
@@ -405,16 +426,29 @@ class HastaWin(tk.Tk):
         win.title("Egzersiz / Diyet Yüzdeleri")
         txt = tk.Text(win, width=50, height=15)
         txt.pack(padx=10, pady=8)
-        
+
         # --- PLAN BAŞLIĞI ------------------------------------------------
         plan = Repo.get_assigned_plan(self.user["id"])
         if plan:
             txt.insert("end",
-                f"Diyet Planı   : {plan.get('diet_plan', '-')}\n"
-                f"Egzersiz Planı: {plan.get('exercise_plan', '-')}\n\n"
-            )
+                       f"Diyet Planı   : {plan.get('diet_plan', '-')}\n"
+                       f"Egzersiz Planı: {plan.get('exercise_plan', '-')}\n\n"
+                       )
         # -----------------------------------------------------------------
-            
+
+        # --- GİRİLEN SEMPTOM LİSTESİ -------------
+        symp = Repo._list("""
+            SELECT sl.symptom_date, s.name
+            FROM symptom_logs sl
+            JOIN symptoms s ON s.id=sl.symptom_id
+            WHERE patient_id=%s
+        """, self.user["id"])
+        if symp:
+            txt.insert("end", "Belirtiler (son girişler):\n")
+            for r in symp[-5:]:
+                txt.insert("end", f"  {r['symptom_date']} : {r['name']}\n")
+            txt.insert("end", "\n")
+        # -----------------------------------------
 
         txt.insert("end", "Tarih      Egzersiz %   Diyet %\n")
         txt.insert("end", "--------------------------------\n")
@@ -440,80 +474,146 @@ class HastaWin(tk.Tk):
 
         win = tk.Toplevel(self)
         win.title("Günlük Kan Şekeri Grafiği")
+
         fig, ax = plt.subplots(figsize=(6, 3))
-        ax.plot(x, y, marker="o")
+        ax.plot(x, [v if v is not None else float('nan')
+                for v in y], marker="o", linestyle="-", color="blue")
+
+        # 1️⃣ Değer etiketleri (nokta üstüne)
+        for i, val in enumerate(y):
+            if val is not None:
+                ax.annotate(f"{val}", (x[i], val), textcoords="offset points", xytext=(
+                    0, 6), ha='center')
+
+        # 2️⃣ X ekseni hizalama
+        ax.set_xticks(range(len(x)))
+        ax.set_xticklabels(x, ha="center")
+
         ax.set_ylabel("mg/dL")
         ax.set_title(f"{self.e_date.get()} Kan Şekeri")
         ax.grid(True)
+
+        # 3️⃣ Eksik veri notu
+        if any(v is None for v in y):
+            ax.text(0.5, 0.05, "⚠ Bazı saatlerde ölçüm eksik", transform=ax.transAxes,
+                    fontsize=9, color="red", ha="center")
+
         FigureCanvasTkAgg(fig, master=win).get_tk_widget().pack(
             fill="both", expand=True)
 
-    # ---------- İnsülin geçmişi ----------
+    # ---------- İnsülin Geçmişi (sade çıktı, gün ayırıcılı) ----------
     def insulin_gecmis(self):
-        d1 = simpledialog.askstring(
-            "Tarih Başlangıcı", "Başlangıç (GG.AA.YYYY):")
-        if not d1:
+        # 1) tarih aralığını küçük diyalog kutularından al
+        d1 = simpledialog.askstring("Başlangıç", "Başlangıç (DD.MM.YYYY):", parent=self)
+        if d1 is None:        # iptal
             return
-        d2 = simpledialog.askstring("Tarih Bitişi", "Bitiş (GG.AA.YYYY):")
-        if not d2:
+        d2 = simpledialog.askstring("Bitiş", "Bitiş (DD.MM.YYYY):", parent=self)
+        if d2 is None:
             return
+
         try:
-            start = datetime.datetime.strptime(d1, "%d.%m.%Y").date()
-            end = datetime.datetime.strptime(d2, "%d.%m.%Y").date()
+            start = datetime.datetime.strptime(d1.strip(), "%d.%m.%Y").date()
+            end   = datetime.datetime.strptime(d2.strip(), "%d.%m.%Y").date()
         except ValueError:
-            messagebox.showerror("Hata", "Biçim GG.AA.YYYY olmalı.")
+            messagebox.showerror("Hata", "Biçim DD.MM.YYYY olmalı.")
             return
         if start > end:
-            messagebox.showerror("Hata", "Başlangıç, bitişten önce olmalı.")
+            messagebox.showwarning("Uyarı", "Başlangıç, bitişten önce olmalı.")
             return
 
+        # 2) sonuç penceresi
         win = tk.Toplevel(self)
-        win.title("İnsülin Geçmişi")
-        cols = (
-            "Tarih",
-            "Sabah",
-            "Öğle",
-            "İkindi",
-            "Akşam",
-            "Gece",
-            "Ortalama",
-            "İnsülin (ml)",
-        )
-        tree = ttk.Treeview(win, columns=cols, show="headings")
-        for c in cols:
-            tree.heading(c, text=c)
-        tree.pack(fill="both", expand=True)
+        win.title("İnsülin Takip (Slot Bazlı)")
+        txt = tk.Text(win, width=70, height=18)
+        txt.pack(padx=8, pady=8)
 
-        for raw in Repo.get_measurement_dates(self.user["id"]):
-            # ham değeri datetime.date'e çevir
-            if isinstance(raw, datetime.date):
-                d_date = raw if not isinstance(
-                    raw, datetime.datetime) else raw.date()
-            else:
-                s = str(raw).split(" ")[0]
-                try:
-                    d_date = datetime.date.fromisoformat(s)
-                except ValueError:
-                    try:
-                        d_date = datetime.datetime.strptime(
-                            s, "%d.%m.%Y").date()
-                    except ValueError:
-                        continue
-
-            if not (start <= d_date <= end):
-                continue
-
-            row_vals, slot_vals = [d_date.strftime("%d.%m.%Y")], []
+        # 3) yardımcı – bir günün satırlarını bas
+        def _dump_day(d_date: datetime.date):
+            sugar_vals = []
             for slot in self.TIME_SLOTS.keys():
                 v = Repo.get_measurement_value(self.user["id"], d_date, slot)
-                row_vals.append(v if v is not None else "-")
-                if v is not None:
-                    slot_vals.append(v)
+                if v is None:
+                    continue
+                sugar_vals.append(v)
+                ort  = sum(sugar_vals) / len(sugar_vals)
+                doz  = insulin_dose(ort) or "0 ünite"
+                hour = {"Sabah":"07:05", "Öğle":"12:05", "İkindi":"15:05",
+                        "Akşam":"18:05", "Gece":"22:05"}[slot]
+                txt.insert("end", f"{d_date:%d.%m.%Y} {hour} | {doz}\n")
 
-            if len(slot_vals) >= 3:
-                avg = sum(slot_vals) / len(slot_vals)
-                row_vals += [f"{avg:.1f}", insulin_dose(avg) or "-"]
-            else:
-                row_vals += ["-", "Yetersiz veri"]
+        # 4) tarih aralığındaki günleri sırayla yaz
+        days = sorted([d for d in Repo.get_measurement_dates(self.user["id"])
+                       if start <= d <= end])
+        for i, g in enumerate(days):
+            _dump_day(g)
+            if i != len(days)-1:                 # son gün değilse ayırıcı çiz
+                txt.insert("end", "-"*40 + "\n")
 
-            tree.insert("", "end", values=row_vals)
+        if not days:
+            txt.insert("end", "Kayıt bulunamadı.\n")
+
+        txt.config(state="disabled")
+
+    def _gunluk_bildir(self):
+        win = tk.Toplevel(self)
+        win.title("Uygulama Kaydı")
+        win.configure(bg=BG)
+        win.resizable(False, False)
+
+        # --- Tarih ------------------------------------------------------
+        tk.Label(win, text="Tarih (GG.AA.YYYY):", bg=BG
+                ).grid(row=0, column=0, sticky="e", padx=6, pady=4)
+        e_dt = tk.Entry(win, width=12, justify="center")
+        e_dt.grid(row=0, column=1, sticky="w")
+        e_dt.insert(0, self.e_date.get())        # ana ekrandaki tarihi al
+
+        # --- Egzersiz ---------------------------------------------------
+        egzs = Repo._list("SELECT id, name FROM exercise_types")
+        tk.Label(win, text="Egzersiz:", bg=BG
+                ).grid(row=1, column=0, sticky="e", padx=6, pady=4)
+        cb_ex = ttk.Combobox(win, values=[e["name"] for e in egzs],
+                            state="readonly", width=25)
+        cb_ex.grid(row=1, column=1)
+        cb_ex.current(0)
+        var_ex = tk.BooleanVar(value=True)
+        ttk.Checkbutton(win, text="Yapıldı", variable=var_ex
+                        ).grid(row=1, column=2)
+
+        # --- Diyet ------------------------------------------------------
+        diets = Repo._list("SELECT id, name FROM diet_types")
+        tk.Label(win, text="Diyet:", bg=BG
+                ).grid(row=2, column=0, sticky="e", padx=6, pady=4)
+        cb_dt = ttk.Combobox(win, values=[d["name"] for d in diets],
+                            state="readonly", width=25)
+        cb_dt.grid(row=2, column=1)
+        cb_dt.current(0)
+        var_dt = tk.BooleanVar(value=True)
+        ttk.Checkbutton(win, text="Uygulandı", variable=var_dt
+                        ).grid(row=2, column=2)
+        # Kaydet butonundan ÖNCE, combobox'ların altına EKLE:
+        plan = Repo.get_assigned_plan(self.user["id"])
+        if plan:
+            tk.Label(win, text=f"📌 Doktorun Önerisi:\nDiyet: {plan['diet_plan']}  |  Egzersiz: {plan['exercise_plan']}", 
+                    bg=BG, fg="darkblue", font=("Segoe UI", 9, "italic"), justify="left"
+            ).grid(row=3, column=0, columnspan=3, pady=(6, 10))
+
+        # --- Kaydet -----------------------------------------------------
+        def kaydet():
+            try:
+                d_obj = datetime.datetime.strptime(e_dt.get().strip(), "%d.%m.%Y").date()
+            except ValueError:
+                messagebox.showerror("Hata", "Tarih GG.AA.YYYY biçiminde olmalı.")
+                return
+
+            Repo.toggle_daily_exercise(self.user["id"],
+                                    egzs[cb_ex.current()]["id"],
+                                    var_ex.get(), d_obj)
+            Repo.toggle_daily_diet(self.user["id"],
+                                diets[cb_dt.current()]["id"],
+                                var_dt.get(), d_obj)
+            messagebox.showinfo("Başarılı",
+                                f"{d_obj:%d.%m.%Y} için kayıt güncellendi.")
+            win.destroy()
+
+        ttk.Button(win, text="Kaydet", command=kaydet, width=18
+                ).grid(row=5, column=0, columnspan=3, pady=10)

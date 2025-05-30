@@ -14,7 +14,7 @@ with open("assets/doktor_pp.png", "rb") as f:
     photo_data = f.read()
 
 # Doktoru güncelle (başlangıç doktoru)
-sql = "UPDATE users SET photo_blob=%s WHERE tc_kimlik_no=%s"
+sql = "UPDATE users SET profile_image=%s WHERE tc_kimlik_no=%s"
 cur.execute(sql, (photo_data, "11111111110"))
 conn.commit()
 
