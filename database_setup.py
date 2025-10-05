@@ -14,7 +14,7 @@ def run_sql_script(sql_file: str):
     )
     cursor = conn.cursor()
 
-    # 🔧 Tüm komutları ";" ile böl ve tek tek çalıştır
+    
     for command in script.split(";"):
         cmd = command.strip()
         if cmd:  # boş satır değilse çalıştır
