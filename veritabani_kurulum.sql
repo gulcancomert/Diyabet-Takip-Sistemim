@@ -1,16 +1,13 @@
-/* ============================================================
-Diyabet Takip Sistemi – TAM KURULUM (TEK DOSYA)
-Son güncelleme: 18 May 2025
-============================================================ */
 
-/* 0️⃣  Veritabanı */
+
+
 DROP DATABASE IF EXISTS diyabet_takip;
 
 CREATE DATABASE diyabet_takip CHARACTER SET utf8mb4 COLLATE utf8mb4_turkish_ci;
 
 USE diyabet_takip;
 
-/* 1️⃣  Kullanıcı & Rol Tabloları */
+
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tc_kimlik_no CHAR(11) NOT NULL UNIQUE,
@@ -37,7 +34,7 @@ CREATE TABLE patients (
     FOREIGN KEY (doctor_id) REFERENCES doctors (id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_turkish_ci;
 
-/* 2️⃣  Lookup Tabloları */
+
 CREATE TABLE exercise_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
@@ -53,7 +50,6 @@ CREATE TABLE symptoms (
     name VARCHAR(100) NOT NULL UNIQUE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_turkish_ci;
 
-/* 3️⃣  Günlük Kayıt Tabloları */
 CREATE TABLE blood_sugar_measurements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
@@ -107,7 +103,6 @@ CREATE TABLE symptom_logs (
     FOREIGN KEY (symptom_id) REFERENCES symptoms (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_turkish_ci;
 
-/* 4️⃣  Alerts & İnsülin */
 CREATE TABLE alerts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
@@ -134,7 +129,7 @@ CREATE TABLE insulin_logs (
     INDEX idx_insulin_patient_date (patient_id, log_time)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_turkish_ci;
 
-/* 5️⃣  Önerilen insülin ve plan tabloları */
+
 CREATE TABLE insulin_history (
     patient_id INT NOT NULL,
     date DATE NOT NULL,
@@ -190,7 +185,7 @@ END
 
 DELIMITER;
 
-/* 7️⃣  Gün sonu ölçüm kontrolü (event) */
+
 DROP EVENT IF EXISTS ev_gun_sonu_kontrol;
 
 DELIMITER /
@@ -231,7 +226,7 @@ END
 
 DELIMITER;
 
-/* 8️⃣  View’lar */
+
 CREATE OR REPLACE VIEW v_gunluk_kan_sekeri AS
 SELECT
     patient_id,
@@ -300,7 +295,7 @@ SELECT
 FROM alerts
 ORDER BY alert_date DESC, alert_time DESC;
 
-/* 9️⃣  Başlangıç Verileri */
+
 INSERT INTO
     exercise_types (name)
 VALUES ('Yürüyüş'),
