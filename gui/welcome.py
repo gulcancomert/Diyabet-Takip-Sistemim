@@ -11,15 +11,14 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 
-# ---------- Genel ayarlar ----------
-_ROOT_DIR   = os.path.dirname(os.path.dirname(__file__))    # DiyabetTakip/
+# Genel ayarlar
+_ROOT_DIR   = os.path.dirname(os.path.dirname(__file__))    
 _ASSETS_DIR = os.path.join(_ROOT_DIR, "assets")
 
-BG_MAIN   = "#EAF2F8"   # açık mavi zemin
+BG_MAIN   = "#EAF2F8"   
 BTN_BG    = "#2980B9"   # koyu mavi buton
 BTN_FG    = "#FFFFFF"
 
-# ttk düğme stilleri (tek sefer tanımla)
 _style = ttk.Style()
 _style.configure("Main.TButton", font=("Segoe UI", 14, "bold"),
                  background=BTN_BG, foreground=BTN_FG)
@@ -28,7 +27,7 @@ _style.map("Main.TButton",
            foreground=[("disabled", "#CCCCCC")])
 
 
-# ---------- 1️⃣  Hoş geldiniz penceresi ----------
+#Hoş geldiniz penceresiü
 class WelcomeWin(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -40,7 +39,7 @@ class WelcomeWin(tk.Tk):
         bg_path = os.path.join(_ASSETS_DIR, "welcome_screen.png")
         self._set_full_background(bg_path)
 
-        # “GİRİŞ” butonu
+        # GİRİŞ butonu
         ttk.Button(self, text="GİRİŞ", style="Main.TButton",
                    command=self._open_role_win
                    ).place(relx=0.5, rely=0.85, anchor="center")
@@ -58,7 +57,7 @@ class WelcomeWin(tk.Tk):
         tk.Label(self, image=self._bg_photo).place(x=0, y=0, relwidth=1, relheight=1)
 
 
-# ---------- 2️⃣  Rol seçimi penceresi ----------
+
 class RoleWin(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -88,8 +87,7 @@ class RoleWin(tk.Tk):
         self.destroy()
         LoginWin(role).mainloop()
 
-
-# ---------- 3️⃣  Basit Login ekranı ----------
+#Basit Login ekranı
 class LoginWin(tk.Tk):
     def __init__(self, role_name: str):
         super().__init__()
@@ -130,6 +128,6 @@ class LoginWin(tk.Tk):
         self.destroy()
 
 
-# ---------- 4️⃣  Uygulamayı başlat ----------
+# Uygulamayı başlat 
 if __name__ == "__main__":
     WelcomeWin().mainloop()
