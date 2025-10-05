@@ -4,7 +4,7 @@ import mysql.connector
 conn = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="gulsuf201",  # Eğer MySQL'e girişte parola varsa buraya yaz
+    password="gulsuf201",  
     database="diyabet_takip"
 )
 cur = conn.cursor()
