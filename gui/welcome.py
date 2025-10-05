@@ -1,10 +1,4 @@
-"""
-gui/app_windows.py
-Tüm başlangıç akışını içeren tek dosya.
-- WelcomeWin  : Hoş geldiniz + ‘Giriş’ butonu
-- RoleWin     : Doktor / Hasta seçim ekranı
-- LoginWin    : Kullanıcı adı / şifre giriş ekranı (yalın örnek)
-"""
+
 
 import os
 import tkinter as tk
