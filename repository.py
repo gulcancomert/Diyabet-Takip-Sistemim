@@ -8,7 +8,7 @@ def _hash(pw: str) -> str:
 
 
 class Repo:
-    # ---------- LOGIN -------------------------------------------------
+    
     @staticmethod
     def get_user(tc, pw):
         tc = ''.join(filter(str.isdigit, tc))
@@ -19,7 +19,7 @@ class Repo:
             )
             return rows[0] if rows else None
 
-    # ---------- YENİ: HASTA OLUŞTURMA / PROFİL ------------------------
+ 
     @staticmethod
     def create_patient(tc_no: str, raw_pw: str, first_name: str, last_name: str, doctor_id: int,
                        email: str, birth_date: datetime.date, gender: str,
@@ -118,8 +118,6 @@ class Repo:
                 pass
 
 
-    # ---------- özet ----------
-
     @staticmethod
     def daily_summary(pid):
         return Repo._single("""SELECT ortalama_kan_sekeri
@@ -134,7 +132,7 @@ class Repo:
                                  AND DATE(measurement_time)=CURDATE()""", pid)
         return row['c']
 
-    # ---------- egzersiz / diyet ----------
+    # egzersiz / diyet 
     @staticmethod
     def add_exercise(pid, ex_id, status):
         Repo._exec("""INSERT INTO exercise_logs
@@ -165,7 +163,7 @@ class Repo:
                               WHERE patient_id=%s
                            GROUP BY diet_date""", pid)
 
-    # ---------- doktor ----------
+    # doktor
     @staticmethod
     def list_patients(doc_id):
         return Repo._list("""
@@ -188,7 +186,7 @@ class Repo:
         return Repo._list(base, pid)
 
 
-    # ---------- insulin ----------
+    # insulin
 
     @staticmethod
     def insulin_advice_on(pid, tarih: str):
@@ -205,9 +203,6 @@ class Repo:
           ORDER BY FIELD(time_slot, 'Sabah', 'Öğle', 'İkindi', 'Akşam', 'Gece')
         """, pid, date_obj)
 
-    # ==============================================================
-    # 🆕 EKLENEN YÖNTEMLER (Doktor Paneli ihtiyaçları)
-    # ==============================================================
 
     @staticmethod
     def measurement_table(pid):
@@ -294,7 +289,7 @@ class Repo:
         with DB() as db:
             db.query(sql, params, fetch=False)
             
-    # ### EKLE – ölçüm okuma yardımcıları  -------------------------------
+
     @staticmethod
     def get_measurement_value(pid: int, date_obj: datetime.date, slot: str):
         """Verilen tarih+slot için tek ölçüm döndürür (yoksa None)."""
@@ -326,7 +321,7 @@ class Repo:
             """, pid)
             return row["sugar_level"] if row else None
         
-    # ---------- measurements / alert helpers ----------
+ 
     @staticmethod
     def today_measurements(pid):
         return Repo._list("""SELECT sugar_level
@@ -456,9 +451,7 @@ class Repo:
             params
         )
 
-    # -------------------------------
-    # --- KURAL MOTORU -------------
-    # -------------------------------
+  
     @staticmethod
     def generate_recommendation(sugar_level: int, symptom_ids: list[int]) -> tuple[str, str]:
         """
@@ -521,7 +514,6 @@ class Repo:
                                 f"Hasta sadece {cnt} uygun ölçüm yaptı (yetersiz).")
 
 
-    #  --- class Repo sonunda (varsa eskisini sil) -----------------
     @staticmethod
     def check_and_alert_incomplete_days(end_date: datetime.date):
         """
@@ -581,9 +573,7 @@ class Repo:
             )
 
 
-    # ──────────────────────────────────────────────────────────────
-    #  KAN ŞEKERİ × EGZERSİZ / DİYET GRAFİĞİ  (yeni)
-    # ──────────────────────────────────────────────────────────────
+
     @staticmethod
     def sugar_diet_exercise_data(pid: int, day: datetime.date):
         """
