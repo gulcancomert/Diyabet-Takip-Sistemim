@@ -6,7 +6,7 @@ from tkinter import messagebox
 # panel sınıfları
 from gui.doktor import DoktorWin        # Doktor paneli
 from gui.hasta  import HastaWin         # Hasta  paneli
-from repository import Repo             # ← EKLENDİ: DB doğrulaması
+from repository import Repo        
 
 _ROOT   = os.path.dirname(os.path.dirname(__file__))
 _ASSETS = os.path.join(_ROOT, "assets")
@@ -14,7 +14,7 @@ _ASSETS = os.path.join(_ROOT, "assets")
 BG = "#EAF2F8"
 BTN_BG, BTN_HOVER, BTN_FG = "#2980B9", "#1F618D", "#FFFFFF"
 
-# ──────────────────────────────────────────
+
 class WelcomeWin(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -119,7 +119,7 @@ class LoginWin(tk.Tk):
         self.destroy()
         WelcomeWin().mainloop()
 
-    # ── YENİ GİRİŞ MANTIGI ────────────────────────────────
+ 
     def _login(self):
         tc = self.e_user.get().strip()
         pw = self.e_pass.get().strip()
@@ -140,9 +140,6 @@ class LoginWin(tk.Tk):
             DoktorWin(user).mainloop()
         else:
             HastaWin(user).mainloop()
-    # ──────────────────────────────────────────────────────
-
-
-# ──────────────────────────────────────────
+   
 if __name__ == "__main__":
     WelcomeWin().mainloop()
