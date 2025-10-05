@@ -1,6 +1,4 @@
-# =============================================================
-# gui/doktor.py  —  Hasta ekleme ve “Gün İçi Değişim” düzeltildi
-# =============================================================
+
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
