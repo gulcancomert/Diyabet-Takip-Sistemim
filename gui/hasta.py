@@ -1,6 +1,4 @@
-# =============================================================
-# gui/hasta.py  —  Profil görüntüleme + düzenleme entegre
-# =============================================================
+
 
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
@@ -14,7 +12,7 @@ from repository import Repo
 
 BG = "#EAF2F8"
 
-# ---------- mevcut fonksiyon ----------
+
 
 
 def insulin_dose(avg: float) -> str:
@@ -43,7 +41,7 @@ class HastaWin(tk.Tk):
     COLS = ["Tarih", "Sabah", "Öğle", "İkindi", "Akşam", "Gece"]
     IDX = {c: i for i, c in enumerate(COLS)}
 
-    # ---------- yardımcı ----------
+    # yardımcı 
     @classmethod
     def _slot_from_time(cls, t: datetime.time) -> str | None:
         for slot, (start, end) in cls.TIME_SLOTS.items():
@@ -51,7 +49,7 @@ class HastaWin(tk.Tk):
                 return slot
         return None
 
-    # 🔹 Boş ilk sütuna ⚠ değer yerleştirici
+   
     def _place_unknown(self, row_id, val):
         for col in ("Sabah", "Öğle", "İkindi", "Akşam", "Gece"):
             if self.tv.item(row_id, "values")[self.IDX[col]] == "":
@@ -61,13 +59,13 @@ class HastaWin(tk.Tk):
         old = self.tv.item(row_id, "values")[self.IDX["Sabah"]]
         self._cell_update(row_id, "Sabah", f"{old}, ⚠ {val}")
 
-    # ---------- kurucu ----------
+    #kurucu
 
     def __init__(self, user: dict | None = None):
         super().__init__()
         self.user = user or {"id": 0, "tc_kimlik_no": "Demo"}
 
-        # 🆕 profil bilgilerini çek
+        # profil bilgileri
         self._profile = Repo.get_profile(self.user["id"])
 
         self.state("zoomed")
@@ -78,14 +76,13 @@ class HastaWin(tk.Tk):
         self._init_table()
         self._populate_table()
 
-    # ---------- ÜST KISIM + PROFİL ----------
+   
     def _build_top_section(self):
         top = tk.Frame(self, bg=BG)
         top.place(relx=0.5, rely=0.05, anchor="n")
         self.lbl_cnt = tk.Label(self, text="", bg=BG)
         self.lbl_cnt.place(relx=0.5, rely=0.62, anchor="center")
 
-        # 🖼️ Fotoğraf (varsa)
         self._photo_tk = None
         if self._profile and self._profile["profile_image"]:
             img = Image.open(io.BytesIO(
@@ -100,7 +97,7 @@ class HastaWin(tk.Tk):
             bg=BG,
         ).pack(pady=4)
 
-        # 🆕 profil metni
+       
         if self._profile:
             info = (
                 f"E-posta: {self._profile['email']}  |  "
@@ -109,12 +106,12 @@ class HastaWin(tk.Tk):
             )
             tk.Label(top, text=info, bg=BG).pack(pady=2)
 
-        # 🆕 Profil Düzenle butonu
+      
         tk.Button(
             top, text="Profil Düzenle", command=self._edit_profile, bg="#F1C40F"
         ).pack(pady=(0, 8))
 
-        # ------------- ölçüm giriş alanları -------------
+      
         frm = tk.Frame(top, bg=BG)
         frm.pack(pady=8)
 
@@ -145,7 +142,7 @@ class HastaWin(tk.Tk):
         tk.Button(top, text="İnsülin Geçmişi",
                   command=self.insulin_gecmis, width=18).pack(pady=2)
 
-    # ---------- 🆕 PROFİL DÜZENLE ----------
+
     def _edit_profile(self):
         prof = Repo.get_profile(self.user["id"])
 
@@ -233,7 +230,7 @@ class HastaWin(tk.Tk):
             win, text="Kaydet", command=kaydet, bg="#2980B9", fg="white", width=20
         ).grid(row=4, column=0, columnspan=2, pady=12)
 
-    # ---------- TABLO ----------
+    # TABLO 
     def _init_table(self):
         style = ttk.Style()
         style.configure(
@@ -276,7 +273,7 @@ class HastaWin(tk.Tk):
             self.tv.heading(col, text=header[col])
             self.tv.column(col, anchor="center", width=180, minwidth=160)
 
-    # ---------- Yardımcılar ----------
+    #Yardımcılar
     def _row_by_date(self, dt_str: str):
         for iid in self.tv.get_children():
             if self.tv.item(iid, "values")[0] == dt_str:
@@ -293,7 +290,7 @@ class HastaWin(tk.Tk):
         vals = self.tv.item(row, "values")
         return [int(v) for v in vals[1:6] if str(v).isdigit()]
 
-    # ---------- TABLOYU DOLDUR ----------
+    
     def _populate_table(self):
         rows = Repo.measurement_table(self.user["id"])
         print("DEBUG ölçüm satırları:", rows)  # ← Bunu ekle
@@ -313,7 +310,7 @@ class HastaWin(tk.Tk):
 
             row_id = self._row_by_date(tarih_str)
 
-            # Slot belirlenemiyorsa ⚠ işareti ile göster
+        
             if not slot:
                 self._place_unknown(row_id, row["deger"])
             else:
@@ -363,13 +360,13 @@ class HastaWin(tk.Tk):
         if alert_t:
             Repo.add_alert_full(self.user["id"], alert_t, val, dt, tm, msg)
 
-        # ✅ SADECE BURADA UYARI EKLENİR (çift kayıt olmaz)
+        
         if val < 70 or val > 200:
             mesaj = f"Kan şekeri {val} mg/dL! Acil müdahale gerekebilir."
             Repo.add_alert_full(
                 self.user["id"], "Acil Uyarı", val, dt, tm, mesaj)
 
-        # Tabloya ekleme/güncelleme
+       
         if not slot:
             self._place_unknown(row_id, val)
             messagebox.showwarning(
@@ -383,10 +380,8 @@ class HastaWin(tk.Tk):
             text=f"{self.e_date.get()} için {len(self._valid_slot_values())} ölçüm var."
         )
 
-        # 🔹 Eksik / Yetersiz ölçüm uyarısı kontrolü (isteğe bağlı tekrar açabilirsin)
-        # Repo.daily_completeness_alert(self.user["id"], dt)
 
-    # ### EKLE – Slot bazlı doz tablosu ----------------------------------
+
 
     def slot_bazli_insulin(self):
         """Her zaman dilimine kadar ortalamayı hesaplar ve doz önerir."""
@@ -417,7 +412,6 @@ class HastaWin(tk.Tk):
 
         messagebox.showinfo("Slot Bazlı İnsülin Önerisi", rapor)
 
-    # ---------- Egzersiz & Diyet ----------
     def egz_diyet(self):
         ex = Repo.exercise_percent(self.user["id"])
         diet = Repo.diet_percent(self.user["id"])
@@ -427,16 +421,14 @@ class HastaWin(tk.Tk):
         txt = tk.Text(win, width=50, height=15)
         txt.pack(padx=10, pady=8)
 
-        # --- PLAN BAŞLIĞI ------------------------------------------------
+        
         plan = Repo.get_assigned_plan(self.user["id"])
         if plan:
             txt.insert("end",
                        f"Diyet Planı   : {plan.get('diet_plan', '-')}\n"
                        f"Egzersiz Planı: {plan.get('exercise_plan', '-')}\n\n"
                        )
-        # -----------------------------------------------------------------
-
-        # --- GİRİLEN SEMPTOM LİSTESİ -------------
+        
         symp = Repo._list("""
             SELECT sl.symptom_date, s.name
             FROM symptom_logs sl
@@ -460,7 +452,7 @@ class HastaWin(tk.Tk):
             txt.insert("end", f"{d}   {e}        {di}\n")
         txt.config(state="disabled")
 
-    # ---------- Günlük şeker grafiği ----------
+    # Günlük şeker grafiği
     def grafik(self):
         row = self._row_by_date(self.e_date.get())
         vals = [self.tv.item(row, "values")[self.IDX[s]]
@@ -479,13 +471,13 @@ class HastaWin(tk.Tk):
         ax.plot(x, [v if v is not None else float('nan')
                 for v in y], marker="o", linestyle="-", color="blue")
 
-        # 1️⃣ Değer etiketleri (nokta üstüne)
+     
         for i, val in enumerate(y):
             if val is not None:
                 ax.annotate(f"{val}", (x[i], val), textcoords="offset points", xytext=(
                     0, 6), ha='center')
 
-        # 2️⃣ X ekseni hizalama
+    
         ax.set_xticks(range(len(x)))
         ax.set_xticklabels(x, ha="center")
 
@@ -493,7 +485,7 @@ class HastaWin(tk.Tk):
         ax.set_title(f"{self.e_date.get()} Kan Şekeri")
         ax.grid(True)
 
-        # 3️⃣ Eksik veri notu
+    
         if any(v is None for v in y):
             ax.text(0.5, 0.05, "⚠ Bazı saatlerde ölçüm eksik", transform=ax.transAxes,
                     fontsize=9, color="red", ha="center")
@@ -501,7 +493,7 @@ class HastaWin(tk.Tk):
         FigureCanvasTkAgg(fig, master=win).get_tk_widget().pack(
             fill="both", expand=True)
 
-    # ---------- İnsülin Geçmişi (sade çıktı, gün ayırıcılı) ----------
+
     def insulin_gecmis(self):
         # 1) tarih aralığını küçük diyalog kutularından al
         d1 = simpledialog.askstring("Başlangıç", "Başlangıç (DD.MM.YYYY):", parent=self)
@@ -560,7 +552,7 @@ class HastaWin(tk.Tk):
         win.configure(bg=BG)
         win.resizable(False, False)
 
-        # --- Tarih ------------------------------------------------------
+        
         tk.Label(win, text="Tarih (GG.AA.YYYY):", bg=BG
                 ).grid(row=0, column=0, sticky="e", padx=6, pady=4)
         e_dt = tk.Entry(win, width=12, justify="center")
@@ -579,7 +571,7 @@ class HastaWin(tk.Tk):
         ttk.Checkbutton(win, text="Yapıldı", variable=var_ex
                         ).grid(row=1, column=2)
 
-        # --- Diyet ------------------------------------------------------
+        # Diyet
         diets = Repo._list("SELECT id, name FROM diet_types")
         tk.Label(win, text="Diyet:", bg=BG
                 ).grid(row=2, column=0, sticky="e", padx=6, pady=4)
@@ -597,7 +589,7 @@ class HastaWin(tk.Tk):
                     bg=BG, fg="darkblue", font=("Segoe UI", 9, "italic"), justify="left"
             ).grid(row=3, column=0, columnspan=3, pady=(6, 10))
 
-        # --- Kaydet -----------------------------------------------------
+        # Kaydet
         def kaydet():
             try:
                 d_obj = datetime.datetime.strptime(e_dt.get().strip(), "%d.%m.%Y").date()
